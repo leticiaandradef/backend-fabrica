@@ -21,5 +21,5 @@ app.get('/resumo/:idCliente', async (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`🔥 Servidor rodando em http://localhost:${port}`);
+    console.log(`Servidor rodando em http://localhost:${port}`);
 });
