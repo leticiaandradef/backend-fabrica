@@ -27,3 +27,4 @@ export async function getResumoPedido(idCliente) {
       throw error;
     }
   }
+  
