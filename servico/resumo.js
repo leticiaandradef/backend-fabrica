@@ -2,8 +2,13 @@ import pool from './conexao.js';
 
 export async function getResumoPedido(idCliente) {
   try {
-    if (!idCliente) {
-      throw new Error('ID do cliente não fornecido.');
+    if (isNaN(idCliente) || idCliente <= 0) {
+      throw new Error('ID de cliente inválido. Deve ser um número maior que 0.');
+    }
+
+    const [cliente] = await pool.query('SELECT id_cliente FROM clientes WHERE id_cliente = ?', [idCliente]);
+    if (cliente.length === 0) {
+      return { erro: 'Cliente não encontrado.' };
     }
 
     const [rows] = await pool.query(`
@@ -17,10 +22,6 @@ export async function getResumoPedido(idCliente) {
         AND p.status = 'aguardando'
     `, [idCliente]);
 
-    if (!rows || rows.length === 0) {
-      throw new Error('Nenhum pedido encontrado para este cliente.');
-    }
-
     const subtotal = parseFloat(rows[0].subtotal) || 0;
     const quantidade = parseInt(rows[0].quantidade) || 0;
 
@@ -29,9 +30,9 @@ export async function getResumoPedido(idCliente) {
     const total = parseFloat((subtotal + taxaServico + taxaEntrega).toFixed(2));
 
     return { quantidade, subtotal, taxaServico, taxaEntrega, total };
-
+    
   } catch (error) {
-    console.error('Erro ao buscar resumo do pedido:', error.message);
-    throw new Error(`Erro ao buscar resumo: ${error.message}`);
+    console.error('Erro inesperado:', error);
+    throw error;
   }
 }
