@@ -1,10 +1,9 @@
-const conectarBancoDeDados = require('./conexao');
+import pool from './conexao.js';
 
-async function registrarResumoPedido(id_cliente, valor_total, forma_pagamento) {
-  const conn = await conectarBancoDeDados();
+export default async function registrarResumoPedido(id_cliente, valor_total, forma_pagamento) {
+  const conn = await pool.getConnection();
 
   try {
-
     const [pedidoResult] = await conn.query(
       'INSERT INTO pedidos (id_cliente, valor_total, forma_pagamento, status) VALUES (?, ?, ?, ?)',
       [id_cliente, valor_total, forma_pagamento, 'aguardando']
@@ -19,7 +18,6 @@ async function registrarResumoPedido(id_cliente, valor_total, forma_pagamento) {
     );
 
     for (const carrinho of carrinhos) {
-
       await conn.query(
         'INSERT INTO pedido_cupcakes (id_pedido, id_cupcake, quantidade, observacao) VALUES (?, ?, ?, ?)',
         [novoPedidoId, carrinho.id_cupcake, carrinho.quantidade, carrinho.observacao]
@@ -48,7 +46,10 @@ async function registrarResumoPedido(id_cliente, valor_total, forma_pagamento) {
       );
     }
 
-    await conn.query('DELETE FROM pedidosCarrinho WHERE id_cliente = ?', [id_cliente]);
+    await conn.query(
+      'DELETE FROM pedidosCarrinho WHERE id_cliente = ?',
+      [id_cliente]
+    );
 
     console.log('Carrinho limpo com sucesso!');
 
@@ -61,5 +62,3 @@ async function registrarResumoPedido(id_cliente, valor_total, forma_pagamento) {
     conn.release();
   }
 }
-
-module.exports = registrarResumoPedido;
