@@ -1,6 +1,26 @@
 import pool from './conexao.js';
 
-export default async function registrarResumoPedido(id_cliente, valor_total, forma_pagamento) {
+export async function getResumoPedido(idCliente) {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+
+    const [resumo] = await conn.query(
+      `SELECT * FROM pedidos WHERE id_cliente = ?`,
+      [idCliente]
+    );
+
+    return resumo;
+
+  } catch (error) {
+    console.error('Erro em getResumoPedido:', error);
+    throw error;
+  } finally {
+    if (conn) conn.release();
+  }
+}
+
+export async function registrarResumoPedido(id_cliente, valor_total, forma_pagamento) {
   let conn;
 
   try {
@@ -59,6 +79,26 @@ export default async function registrarResumoPedido(id_cliente, valor_total, for
 
   } catch (error) {
     console.error('Erro em registrarResumoPedido:', error);
+    return { status: 'erro', erro: error.message };
+  } finally {
+    if (conn) conn.release();
+  }
+}
+
+export async function apagarPedidosAguardando(idCliente) {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+
+    const [resultado] = await conn.query(
+      'DELETE FROM pedidos WHERE id_cliente = ? AND status = ?',
+      [idCliente, 'aguardando']
+    );
+
+    return { status: 'ok', afetados: resultado.affectedRows };
+
+  } catch (error) {
+    console.error('Erro em apagarPedidosAguardando:', error);
     return { status: 'erro', erro: error.message };
   } finally {
     if (conn) conn.release();

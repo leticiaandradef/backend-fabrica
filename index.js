@@ -1,8 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { getResumoPedido } from './servico/resumo.js';
-import registrarResumoPedido from './servico/resumoPedido.js';
-import apagarPedidosAguardando from './servico/apagarPedidosAguardando.js';
+import { getResumoPedido, registrarResumoPedido, apagarPedidosAguardando } from './servico/resumo.js';
 
 const app = express();
 const port = 3000;
