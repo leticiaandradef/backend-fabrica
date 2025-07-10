@@ -1,20 +1,29 @@
 import pool from './conexao.js';
 
 export default async function registrarResumoPedido(id_cliente, valor_total, forma_pagamento) {
-  const conn = await pool.getConnection();
+  let conn;
 
   try {
+    console.log("Iniciando registro do pedido:", { id_cliente, valor_total, forma_pagamento });
+
+    conn = await pool.getConnection();
+
     const [pedidoResult] = await conn.query(
       'INSERT INTO pedidos (id_cliente, valor_total, forma_pagamento, status) VALUES (?, ?, ?, ?)',
       [id_cliente, valor_total, forma_pagamento, 'aguardando']
     );
 
     const novoPedidoId = pedidoResult.insertId;
+    console.log("Pedido criado com ID:", novoPedidoId);
 
     const [carrinhos] = await conn.query(
       'SELECT * FROM pedidosCarrinho WHERE id_cliente = ?',
       [id_cliente]
     );
+
+    if (carrinhos.length === 0) {
+      throw new Error('Carrinho vazio. Nada para registrar.');
+    }
 
     for (const carrinho of carrinhos) {
       await conn.query(
@@ -45,9 +54,11 @@ export default async function registrarResumoPedido(id_cliente, valor_total, for
       [id_cliente]
     );
 
+    console.log('Pedido registrado com sucesso');
     return { status: 'ok', id_pedido: novoPedidoId };
 
   } catch (error) {
+    console.error('Erro em registrarResumoPedido:', error);
     return { status: 'erro', erro: error.message };
   } finally {
     if (conn) conn.release();
