@@ -9,53 +9,60 @@ const port = 3000;
 app.use(cors());
 app.use(express.json());
 
-
 app.get('/resumo/:idCliente', async (req, res) => {
   const { idCliente } = req.params;
 
-  try {
-    if (!idCliente) {
-      return res.status(400).json({ erro: 'ID do cliente é obrigatório.' });
-    }
+  if (isNaN(idCliente) || idCliente <= 0) {
+    return res.status(400).json({ erro: 'ID de cliente inválido. Deve ser um número maior que 0.' });
+  }
 
+  try {
     const resumo = await getResumoPedido(idCliente);
     res.json(resumo);
-
   } catch (error) {
-    console.error('Erro na rota /resumo:', error.message);
-
-    const isClientError = error.message.includes('Nenhum pedido') || error.message.includes('ID do cliente');
-
-    res.status(isClientError ? 400 : 500).json({
-      erro: error.message || 'Erro inesperado ao buscar resumo do pedido.'
-    });
+    console.error('Erro ao buscar resumo do pedido:', error);
+    res.status(500).json({ erro: 'Erro interno ao buscar resumo do pedido.' });
   }
 });
 
+app.post('/resumo', async (req, res) => {
+  try {
+    const { id_cliente, valor_total, forma_pagamento } = req.body;
 
-app.post('/pedido', async (req, res) => {
-  const { id_cliente, valor_total, forma_pagamento } = req.body;
+    if (!id_cliente || !valor_total || !forma_pagamento) {
+      return res.status(400).json({ erro: 'Dados do pedido incompletos.' });
+    }
+
+    const resposta = await registrarResumoPedido(id_cliente, valor_total, forma_pagamento);
+
+    if (resposta.status === 'erro') {
+      return res.status(500).json({ erro: resposta.erro });
+    }
+
+    res.status(201).json(resposta);
+  } catch (error) {
+    console.error('Erro ao registrar pedido:', error);
+    res.status(500).json({ erro: 'Erro interno ao registrar pedido.' });
+  }
+});
+
+app.delete('/pedidos/aguardando/:idCliente', async (req, res) => {
+  const { idCliente } = req.params;
+
+  if (isNaN(idCliente) || idCliente <= 0) {
+    return res.status(400).json({ erro: 'ID de cliente inválido. Deve ser um número maior que 0.' });
+  }
 
   try {
-    if (!id_cliente || !valor_total || !forma_pagamento) {
-      return res.status(400).json({ status: 'erro', erro: 'Dados obrigatórios faltando.' });
-    }
 
-    const resultado = await registrarResumoPedido(id_cliente, valor_total, forma_pagamento);
-
-    if (resultado.status === 'ok') {
-      res.json(resultado);
-    } else {
-      res.status(500).json(resultado);
-    }
-
+    const resultado = await apagarPedidosAguardando(idCliente);
+    res.json(resultado);
   } catch (error) {
-    console.error('Erro na rota /pedido:', error);
-    res.status(500).json({ status: 'erro', erro: 'Erro interno ao registrar pedido.' });
+    console.error('Erro ao apagar pedidos aguardando:', error);
+    res.status(500).json({ erro: 'Erro interno ao apagar pedidos aguardando.' });
   }
 });
 
-
 app.listen(port, () => {
-  console.log(`Servidor rodando em: http://localhost:${port}`);
+  console.log(`API rodando na porta ${port}`);
 });
