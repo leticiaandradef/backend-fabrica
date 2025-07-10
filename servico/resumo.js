@@ -10,7 +10,6 @@ export default async function registrarResumoPedido(id_cliente, valor_total, for
     );
 
     const novoPedidoId = pedidoResult.insertId;
-    console.log('Pedido criado com ID:', novoPedidoId);
 
     const [carrinhos] = await conn.query(
       'SELECT * FROM pedidosCarrinho WHERE id_cliente = ?',
@@ -23,21 +22,16 @@ export default async function registrarResumoPedido(id_cliente, valor_total, for
         [novoPedidoId, carrinho.id_cupcake, carrinho.quantidade, carrinho.observacao]
       );
 
-      console.log(`Cupcake ${carrinho.id_cupcake} inserido com sucesso!`);
-
       const [ingredientes] = await conn.query(
         'SELECT id_ingrediente FROM pedidosCarrinho_ingredientes WHERE id_pedido_carrinho = ?',
         [carrinho.id_pedido_carrinho]
       );
-
-      console.log(`Ingredientes do carrinho ${carrinho.id_pedido_carrinho}:`, ingredientes);
 
       for (const ing of ingredientes) {
         await conn.query(
           'INSERT INTO pedido_ingredientes (id_pedido, id_ingrediente, quantidade) VALUES (?, ?, ?)',
           [novoPedidoId, ing.id_ingrediente, 1]
         );
-        console.log(`Ingrediente ${ing.id_ingrediente} adicionado ao pedido ${novoPedidoId}`);
       }
 
       await conn.query(
@@ -51,14 +45,11 @@ export default async function registrarResumoPedido(id_cliente, valor_total, for
       [id_cliente]
     );
 
-    console.log('Carrinho limpo com sucesso!');
-
     return { status: 'ok', id_pedido: novoPedidoId };
 
   } catch (error) {
-    console.error('Erro ao registrar pedido:', error);
     return { status: 'erro', erro: error.message };
   } finally {
-    conn.release();
+    if (conn) conn.release();
   }
 }
